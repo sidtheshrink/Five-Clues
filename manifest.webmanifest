@@ -14,8 +14,7 @@
     { "src": "maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
-    { "name": "Diagnoses", "url": "./#diagnoses" },
-    { "name": "Drugs", "url": "./#drugs" },
-    { "name": "Mixed", "url": "./#mixed" }
+    { "name": "Disorders", "url": "./#disorders" },
+    { "name": "Drugs", "url": "./#drugs" }
   ]
 }

@@ -52,7 +52,7 @@ nav.tabs a .c{opacity:.7;margin-left:6px}
 .controls label{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 select,input{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:9px 11px;min-width:0}
 select{flex:1;max-width:100%}
-.chart{background:var(--paper);border:1px solid var(--line);border-radius:4px;overflow:hidden;box-shadow:0 1px 0 var(--line),0 10px 24px -18px rgba(0,0,0,.35)}
+.chart{background:var(--paper);border:1px solid var(--ink);border-top:none;border-radius:0 0 4px 4px;overflow:hidden;box-shadow:0 1px 0 var(--line),0 10px 24px -18px rgba(0,0,0,.35)}
 .chart-head{display:flex;justify-content:space-between;gap:10px;padding:12px 18px;border-bottom:2px solid var(--ink);font-family:var(--mono);font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 .kind{color:var(--accent)}
 .pts{color:var(--accent);font-weight:500}
@@ -88,7 +88,7 @@ footer p{margin:0}
   <header>
     <div>
       <h1>Five <span>Clues</span></h1>
-      <p class="sub" id="sub">Guess the diagnosis in as few clues as you can.</p>
+      <p class="sub" id="sub">Guess the DSM-5-TR disorder in as few clues as you can.</p>
     </div>
     <div class="stats" aria-live="polite">
       <div><b id="sScore">0</b>points</div>
@@ -99,18 +99,13 @@ footer p{margin:0}
 
   <div>
     <nav class="tabs" aria-label="Sections">
-      <a href="#diagnoses" data-sec="diagnoses">Diagnoses<span class="c" id="cDx"></span></a>
+      <a href="#disorders" data-sec="disorders">Disorders<span class="c" id="cDx"></span></a>
       <a href="#drugs" data-sec="drugs">Drugs<span class="c" id="cRx"></span></a>
-      <a href="#mixed" data-sec="mixed">Mixed</a>
     </nav>
-  </div>
-  <div class="controls">
-    <label for="filter" id="filterLabel">Chapter</label>
-    <select id="filter"></select>
   </div>
 
   <section class="chart" aria-label="Case">
-    <div class="chart-head"><span><span id="caseNo">Case 1</span> · <span class="kind" id="kind">Diagnosis</span></span><span class="pts" id="ptsLeft">Worth 5 pts</span></div>
+    <div class="chart-head"><span><span id="caseNo">Case 1</span> · <span class="kind" id="kind">Disorder</span></span><span class="pts" id="ptsLeft">Worth 5 pts</span></div>
     <ol class="clues" id="clues"></ol>
     <div class="play" id="play">
       <form class="row" id="guessForm" autocomplete="off">
@@ -124,7 +119,7 @@ footer p{margin:0}
       <p class="msg" id="msg" aria-live="polite"></p>
     </div>
     <div class="result" id="result" hidden>
-      <span class="label" id="rLabel">Diagnosis</span>
+      <span class="label" id="rLabel">Disorder</span>
       <h2 id="rName"></h2>
       <span class="ch" id="rChapter"></span>
       <span class="verdict" id="rVerdict"></span>
@@ -145,12 +140,9 @@ footer p{margin:0}
 <script>
 const DX = (window.DX||[]).map(c=>({...c,type:"dx"}));
 const RX = (window.RX||[]).map(c=>({...c,type:"rx"}));
-const ORDER = ["Neurodevelopmental Disorders","Schizophrenia Spectrum and Other Psychotic Disorders","Bipolar and Related Disorders","Depressive Disorders","Anxiety Disorders","Obsessive-Compulsive and Related Disorders","Trauma- and Stressor-Related Disorders","Dissociative Disorders","Somatic Symptom and Related Disorders","Feeding and Eating Disorders","Elimination Disorders","Sleep-Wake Disorders","Sexual Dysfunctions","Gender Dysphoria","Disruptive, Impulse-Control, and Conduct Disorders","Substance-Related and Addictive Disorders","Neurocognitive Disorders","Personality Disorders","Paraphilic Disorders","Medication-Induced Movement Disorders","Other Conditions That May Be a Focus of Clinical Attention"];
-const RXORDER = ["Antidepressants","Antipsychotics","Mood Stabilizers","Anxiolytics & Hypnotics","ADHD & Wakefulness","Addiction","Dementia","Side-Effect Treatments"];
 const SECTIONS = {
-  diagnoses:{pool:DX, all:"All chapters", label:"Chapter", groups:ORDER, sub:"Guess the DSM-5-TR diagnosis in as few clues as you can.", ph:"Type a diagnosis…"},
-  drugs:{pool:RX, all:"All drug classes", label:"Drug class", groups:RXORDER, sub:"Name the psychiatric drug in as few clues as you can.", ph:"Type a drug name…"},
-  mixed:{pool:[...DX,...RX], all:"Everything", label:"Pool", groups:["Diagnoses only","Drugs only"], sub:"Diagnoses and drugs shuffled together.", ph:"Type a diagnosis or drug…"}
+  disorders:{pool:DX, sub:"Guess the DSM-5-TR disorder in as few clues as you can.", ph:"Type a disorder…"},
+  drugs:{pool:RX, sub:"Name the psychiatric drug in as few clues as you can.", ph:"Type a drug name…"}
 };
 const $ = id => document.getElementById(id);
 const norm = s => s.toLowerCase().normalize("NFKD").replace(/[’']/g,"").replace(/\(.*?\)/g," ").replace(/[^a-z0-9]+/g," ").replace(/\b(disorder|the|type)\b/g,"").replace(/\s+/g," ").trim();
@@ -158,19 +150,14 @@ const keys = c => { const inner=(c.name.match(/\((.*?)\)/)||[])[1]; return [c.na
 const esc = s => s.replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
 $("cDx").textContent=DX.length; $("cRx").textContent=RX.length;
 
-let sec="diagnoses", stats={}, deck=[], cur=null, shown=1, done=false, caseNo=0;
+let sec="disorders", stats={}, deck=[], cur=null, shown=1, done=false, caseNo=0;
 try { stats = JSON.parse(localStorage.getItem("fiveclues2")||"{}"); } catch(e){}
-try { const old=JSON.parse(localStorage.getItem("fiveclues")||"null"); if(old && !stats.diagnoses) stats.diagnoses=old; } catch(e){}
+try { const old=JSON.parse(localStorage.getItem("fiveclues")||"null"); if(stats.diagnoses && !stats.disorders) stats.disorders=stats.diagnoses; if(old && !stats.disorders) stats.disorders=old; } catch(e){}
 const S = () => (stats[sec] ||= {score:0,played:0,solved:0,streak:0});
 const save = () => { try { localStorage.setItem("fiveclues2", JSON.stringify(stats)); } catch(e){} };
 
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-function pool(){
-  const f=$("filter").value, P=SECTIONS[sec].pool;
-  if(f===SECTIONS[sec].all) return P;
-  if(sec==="mixed") return P.filter(c=>c.type===(f==="Diagnoses only"?"dx":"rx"));
-  return P.filter(c=>c.chapter===f);
-}
+function pool(){ return SECTIONS[sec].pool; }
 function renderStats(){ const s=S(); $("sScore").textContent=s.score; $("sSolved").textContent=`${s.solved}/${s.played}`; $("sStreak").textContent=s.streak; }
 function renderClues(fresh){
   $("clues").innerHTML = cur.clues.map((t,i)=>{
@@ -186,7 +173,7 @@ function newCase(){
   cur = deck.pop(); shown=1; done=false; caseNo++;
   document.body.classList.toggle("rx", cur.type==="rx");
   $("caseNo").textContent=`Case ${caseNo}`;
-  $("kind").textContent = cur.type==="rx" ? "Drug" : "Diagnosis";
+  $("kind").textContent = cur.type==="rx" ? "Drug" : "Disorder";
   $("play").hidden=false; $("result").hidden=true; $("msg").textContent=""; $("msg").className="msg"; $("guess").value="";
   renderClues();
 }
@@ -196,7 +183,7 @@ function finish(won){
   if(won){s.solved++;s.streak++;s.score+=pts;} else s.streak=0;
   save(); renderStats(); renderClues();
   $("play").hidden=true; $("result").hidden=false;
-  $("rLabel").textContent = cur.type==="rx" ? "Drug" : "Diagnosis";
+  $("rLabel").textContent = cur.type==="rx" ? "Drug" : "Disorder";
   $("rName").textContent=cur.name; $("rChapter").textContent=cur.chapter;
   $("rVerdict").textContent = won ? `Solved on clue ${shown}. +${pts} point${pts>1?"s":""}.` : "Not solved this time.";
   $("rVerdict").className = "verdict "+(won?"hit":"miss");
@@ -206,16 +193,11 @@ function finish(won){
 function reveal(){ if(shown<5){shown++; renderClues(shown-1);} }
 
 function setSection(name){
-  sec = SECTIONS[name] ? name : "diagnoses";
+  if(name==="diagnoses"||name==="mixed") name="disorders";
+  sec = SECTIONS[name] ? name : "disorders";
   const cfg=SECTIONS[sec];
   document.querySelectorAll("nav.tabs a").forEach(a=>{ if(a.dataset.sec===sec) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current"); });
-  $("sub").textContent=cfg.sub; $("guess").placeholder=cfg.ph; $("filterLabel").textContent=cfg.label;
-  const present = new Set(cfg.pool.map(c=>c.chapter));
-  const groups = sec==="mixed" ? cfg.groups : cfg.groups.filter(g=>present.has(g));
-  $("filter").innerHTML = [cfg.all,...groups].map(g=>{
-    const n = g===cfg.all ? cfg.pool.length : sec==="mixed" ? (g==="Diagnoses only"?DX.length:RX.length) : cfg.pool.filter(c=>c.chapter===g).length;
-    return `<option value="${esc(g)}">${esc(g)} (${n})</option>`;
-  }).join("");
+  $("sub").textContent=cfg.sub; $("guess").placeholder=cfg.ph;
   $("names").innerHTML = [...new Set(cfg.pool.map(c=>c.name))].sort().map(n=>`<option value="${esc(n)}"></option>`).join("");
   deck=[]; caseNo=0; renderStats(); newCase();
 }
@@ -231,7 +213,6 @@ $("guessForm").addEventListener("submit",e=>{
 $("nextClue").addEventListener("click",()=>{ $("msg").textContent=""; reveal(); });
 $("giveUp").addEventListener("click",()=>finish(false));
 $("nextCase").addEventListener("click",newCase);
-$("filter").addEventListener("change",()=>{ deck=[]; caseNo=0; newCase(); });
 window.addEventListener("hashchange",()=>setSection(location.hash.slice(1)));
 setSection(location.hash.slice(1));
 </script>
