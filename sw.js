@@ -2,9 +2,9 @@
 // The app shell is cached on install. Game data (dx.js, rx.js) loads from the network
 // when online so updates arrive right away, and falls back to the cached copy offline.
 // Bump VERSION whenever you change index.html or the icons.
-const VERSION = "fiveclues-v1";
+const VERSION = "fiveclues-v2";
 const SHELL = ["./", "index.html", "dx.js", "rx.js", "manifest.webmanifest",
-  "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png", "icons/apple-touch-icon.png"];
+  "icon-192.png", "icon-512.png", "maskable-512.png", "apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
