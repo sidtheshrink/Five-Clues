@@ -76,6 +76,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,nav.tabs a:focus-v
 .result .label{font-family:var(--mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 .result h2{font-family:var(--display);font-size:1.5rem;margin:0;text-wrap:balance;line-height:1.15}
 .result .ch{font-size:.85rem;color:var(--muted)}
+.result .icd{font-family:var(--mono);font-size:.78rem}
 .pearl{border-left:3px solid var(--accent);padding:4px 0 4px 12px;margin:4px 0 0;font-size:.93rem}
 .verdict{font-weight:600}.verdict.hit{color:var(--hit)}.verdict.miss{color:var(--miss)}
 footer{font-size:.78rem;color:var(--muted);display:flex;flex-direction:column;gap:4px}
@@ -88,7 +89,7 @@ footer p{margin:0}
   <header>
     <div>
       <h1>Five <span>Clues</span></h1>
-      <p class="sub" id="sub">Guess the DSM-5-TR disorder in as few clues as you can.</p>
+      <p class="sub" id="sub">Guess the DSM-5-TR or ICD-11 disorder in as few clues as you can.</p>
     </div>
     <div class="stats" aria-live="polite">
       <div><b id="sScore">0</b>points</div>
@@ -122,6 +123,7 @@ footer p{margin:0}
       <span class="label" id="rLabel">Disorder</span>
       <h2 id="rName"></h2>
       <span class="ch" id="rChapter"></span>
+      <span class="ch icd" id="rIcd" hidden></span>
       <span class="verdict" id="rVerdict"></span>
       <p class="pearl" id="rPearl"></p>
       <div class="row"><button id="nextCase" type="button">Next case</button></div>
@@ -129,7 +131,7 @@ footer p{margin:0}
   </section>
 
   <footer>
-    <p>Diagnosis names follow DSM-5-TR (2022). Drug facts were checked against approvals through October 2026, including centanafadine (July 2026) and esketamine monotherapy (2025).</p>
+    <p>Disorders follow DSM-5-TR (2022) and ICD-11, with ICD-11 codes shown after each answer. Drug facts were checked against approvals through October 2026, including centanafadine (July 2026) and esketamine monotherapy (2025).</p>
     <p>Study aid only. Clues are written in plain language and simplify the full criteria and labeling; check the manual and current prescribing information.</p>
   </footer>
 </div>
@@ -141,7 +143,7 @@ footer p{margin:0}
 const DX = (window.DX||[]).map(c=>({...c,type:"dx"}));
 const RX = (window.RX||[]).map(c=>({...c,type:"rx"}));
 const SECTIONS = {
-  disorders:{pool:DX, sub:"Guess the DSM-5-TR disorder in as few clues as you can.", ph:"Type a disorder…"},
+  disorders:{pool:DX, sub:"Guess the DSM-5-TR or ICD-11 disorder in as few clues as you can.", ph:"Type a disorder…"},
   drugs:{pool:RX, sub:"Name the psychiatric drug in as few clues as you can.", ph:"Type a drug name…"}
 };
 const $ = id => document.getElementById(id);
@@ -184,7 +186,11 @@ function finish(won){
   save(); renderStats(); renderClues();
   $("play").hidden=true; $("result").hidden=false;
   $("rLabel").textContent = cur.type==="rx" ? "Drug" : "Disorder";
-  $("rName").textContent=cur.name; $("rChapter").textContent=cur.chapter;
+  $("rName").textContent=cur.name;
+  $("rChapter").textContent = cur.type==="rx" ? cur.chapter : `${cur.sys} · ${cur.chapter}`;
+  const showIcd = cur.type==="dx" && cur.sys==="DSM-5-TR" && cur.icd;
+  $("rIcd").hidden = !(showIcd || (cur.type==="dx" && cur.sys==="ICD-11"));
+  $("rIcd").textContent = cur.sys==="ICD-11" ? `ICD-11 code ${cur.icd.split(" ")[0]}` : (showIcd ? `ICD-11: ${cur.icd}` : "");
   $("rVerdict").textContent = won ? `Solved on clue ${shown}. +${pts} point${pts>1?"s":""}.` : "Not solved this time.";
   $("rVerdict").className = "verdict "+(won?"hit":"miss");
   $("rPearl").textContent = cur.pearl;
